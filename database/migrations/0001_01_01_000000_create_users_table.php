@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -13,10 +12,14 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('f_name');
+            $table->string('l_name');
             $table->string('email')->unique();
+            $table->string('phone')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->integer('store_id');
+            $table->integer('role_id');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -34,6 +37,27 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
+        });
+
+        Schema::create('role', function (Blueprint $table) {
+            $table->id()->autoIncrement();
+            $table->integer('permission_id');
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('permission', function (Blueprint $table) {
+            $table->id()->autoIncrement();
+            $table->longText('permission');
+            $table->timestamps();
+        });
+
+        Schema::create('user_feedback', function (Blueprint $table) {
+            $table->id()->autoIncrement();
+            $table->integer('user_id');
+            $table->string('feedback');
+            $table->integer('rating');
+            $table->timestamps();
         });
     }
 
