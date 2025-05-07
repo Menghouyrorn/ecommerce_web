@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use App\Models\UserModel;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Number;
 
 class AuthController extends Controller
 {
@@ -26,22 +29,28 @@ class AuthController extends Controller
         }
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
         try {
-            $request->validate([
-                'email' => 'required|string|email',
-                'password' => 'required|string',
-            ]);
-
-            $check_user = UserModel::query()->where('email', $request->email)->first();
-            if (!$check_user) {
+            $key = $request->ip();
+            $limit = RateLimiter::tooManyAttempts($key, 3);
+            if ($limit) {
+                $seconds = RateLimiter::availableIn($key);
+                $minutes = $seconds / 60;
                 return response()->json([
-                    'message' => 'User not found!'
-                ], 404);
+                    'message' => 'You may try again in ' . number_format($minutes) . ' Minutes'
+                ], 429);
             }
+            $check_user = UserModel::query()->where('password', $request->password)->first();
+            if (!$check_user) {
+                RateLimiter::hit($key);
+                return response()->json([
+                    'message' => 'Password or Email is incorrect!Please check again! thank'
+                ], 404);
 
+            }
             $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
+            RateLimiter::clear($request->ip());
             return response()->json([
                 'token' => $token,
             ], 202);
@@ -74,10 +83,13 @@ class AuthController extends Controller
         }
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         try {
-            Auth::logout();
+            $request->user()->tokens()->delete();
+            return response()->json([
+                'message' => 'User logged out successfully!'
+            ], 202);
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
             $msg = json_encode($exception->getMessage(), JSON_THROW_ON_ERROR);
