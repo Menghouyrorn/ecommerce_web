@@ -33,27 +33,34 @@ class AuthController extends Controller
     {
         try {
             $key = $request->ip();
+            $remember_me = $request->has('remember_me');
             $limit = RateLimiter::tooManyAttempts($key, 3);
             if ($limit) {
                 $seconds = RateLimiter::availableIn($key);
-                $minutes = $seconds / 60;
+                $minutes = ceil($seconds / 60);
                 return response()->json([
                     'message' => 'You may try again in ' . number_format($minutes) . ' Minutes'
                 ], 429);
             }
-            $check_user = UserModel::query()->where('password', $request->password)->first();
-            if (!$check_user) {
+            $check_user = UserModel::query()->where('email', $request->email)->first();
+            if (!$check_user && Hash::check($request->password, $check_user->password)) {
                 RateLimiter::hit($key);
                 return response()->json([
                     'message' => 'Password or Email is incorrect!Please check again! thank'
                 ], 404);
-
             }
-            $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
-            RateLimiter::clear($request->ip());
-            return response()->json([
-                'token' => $token,
-            ], 202);
+            $check_remember_me = Auth::attempt($request->only('email', 'password'), $remember_me);
+            if ($check_remember_me) {
+                $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
+                RateLimiter::clear($request->ip());
+                return response()->json([
+                    'token' => $token,
+                ], 202);
+            } else {
+                return response()->json([
+                    'message' => "Authentication failed! Please try again!"
+                ], 401);
+            }
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             $msg = json_encode($e->getMessage(), JSON_THROW_ON_ERROR);
@@ -87,6 +94,9 @@ class AuthController extends Controller
     {
         try {
             $request->user()->tokens()->delete();
+            $request->user()->forceFill([
+                'remember_token' => null
+            ])->save();
             return response()->json([
                 'message' => 'User logged out successfully!'
             ], 202);
