@@ -4,24 +4,22 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
 use App\Models\UserModel;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Number;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
     public function currentUser()
     {
         try {
-            return response()->json(
-                [
-                    'current_user' => Auth::user()
-                ]
-                , 202);
+            $c_user = Auth::user();
+            $check = UserModel::query()->with('role')->find($c_user->id)->all();
+            return UserResource::collection($check);
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
             $msg = json_encode($exception->getMessage(), JSON_THROW_ON_ERROR);
@@ -33,7 +31,7 @@ class AuthController extends Controller
     {
         try {
             $key = $request->ip();
-            $remember_me = $request->has('remember_me');
+            $remember_me = $request->get('remember_me');
             $limit = RateLimiter::tooManyAttempts($key, 3);
             if ($limit) {
                 $seconds = RateLimiter::availableIn($key);
@@ -49,6 +47,7 @@ class AuthController extends Controller
                     'message' => 'Password or Email is incorrect!Please check again! thank'
                 ], 404);
             }
+            Auth::login($check_user);
             $check_remember_me = Auth::attempt($request->only('email', 'password'), $remember_me);
             if ($check_remember_me) {
                 $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
