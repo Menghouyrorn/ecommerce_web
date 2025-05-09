@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\RoleModel;
 use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,24 +42,27 @@ class AuthController extends Controller
                 ], 429);
             }
             $check_user = UserModel::query()->where('email', $request->email)->first();
-            if (!$check_user && Hash::check($request->password, $check_user->password)) {
+            if (!$check_user) {
                 RateLimiter::hit($key);
                 return response()->json([
                     'message' => 'Password or Email is incorrect!Please check again! thank'
                 ], 404);
             }
-            Auth::login($check_user);
-            $check_remember_me = Auth::attempt($request->only('email', 'password'), $remember_me);
-            if ($check_remember_me) {
-                $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
-                RateLimiter::clear($request->ip());
-                return response()->json([
-                    'token' => $token,
-                ], 202);
-            } else {
-                return response()->json([
-                    'message' => "Authentication failed! Please try again!"
-                ], 401);
+            $check_password = Hash::check($request->password, $check_user->password);
+            if ($check_password) {
+                Auth::login($check_user);
+                $check_remember_me = Auth::attempt($request->only('email', 'password'), $remember_me);
+                if ($check_remember_me) {
+                    $token = $check_user->createToken('TOKEN_NAME')->plainTextToken;
+                    RateLimiter::clear($request->ip());
+                    return response()->json([
+                        'token' => $token,
+                    ], 202);
+                } else {
+                    return response()->json([
+                        'message' => "Authentication failed! Please try again!"
+                    ], 401);
+                }
             }
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -75,6 +79,12 @@ class AuthController extends Controller
                 'l_name' => 'required|string',
                 'email' => 'required|string|email|unique:users',
                 'password' => 'required|string',
+            ]);
+            $role_name = 'user';
+            $get_role = RoleModel::query()->where('name', $role_name)->first();
+            $role_id = $get_role->id;
+            $request->merge([
+                'role_id' => $role_id,
             ]);
             $hash_password = Hash::make($request->password);
             $request->merge(['password' => $hash_password]);

@@ -21,7 +21,7 @@ class UserResource extends JsonResource
             'email' => $this->resource->email,
             'phone' => $this->resource->phone,
             'email_verified_at' => $this->resource->email_verified_at,
-            'store' => [],
+            'store' => StoreResource::collection($this->whenLoaded('store')),
             'role' => RoleResource::make($this->whenLoaded('role')),
             'created_at' => new DateResource($this->resource->created_at),
             'updated_at' => new DateResource($this->resource->updated_at)

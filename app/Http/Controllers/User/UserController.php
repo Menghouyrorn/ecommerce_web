@@ -26,6 +26,7 @@ class UserController extends Controller
                 ->when($l_name, fn(Builder $query) => $query->where('last_name', $l_name))
                 ->when($phone, fn(Builder $query) => $query->where('phone', $phone))
                 ->with('role.permission')
+                ->with('store.manager')
                 ->paginate($per_page);
             return UserResource::collection($res);
         } catch (\Exception $exception) {

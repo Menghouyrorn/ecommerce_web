@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\User\PermissionController;
 use App\Http\Controllers\User\RoleController;
@@ -53,6 +54,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::patch('/{id}', 'update');
             Route::delete('/{id}', 'delete');
             Route::get('/{id}', 'show');
+        });
+    });
+
+    Route::prefix('store')->group(function () {
+        Route::controller(StoreController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/create', 'store');
+            Route::patch('/{id}', 'update');
+            Route::delete('/{id}', 'destroy');
         });
     });
 });
