@@ -15,7 +15,7 @@ class UserModel extends Authenticatable
     use HasFactory, HasApiTokens, Notifiable;
 
     protected $table = 'users';
-    protected $fillable = ['id', 'f_name', 'l_name', 'password', 'email', 'phone', 'remember_token'];
+    protected $fillable = ['id', 'f_name', 'l_name', 'password', 'email', 'phone','role_id','store_id', 'remember_token'];
 
     protected $hidden = ['password'];
 

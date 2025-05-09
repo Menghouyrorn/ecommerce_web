@@ -35,6 +35,18 @@ class UserController extends Controller
         }
     }
 
+    public function show(int $id)
+    {
+        try {
+            $res = UserModel::query()->with('role.permission')->where('id', $id)->get();
+            return UserResource::collection($res);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            $msg = json_encode($e->getMessage(), JSON_THROW_ON_ERROR);
+            return response($msg, 500);
+        }
+    }
+
     public function update(Request $request, int $id)
     {
         try {
@@ -50,6 +62,27 @@ class UserController extends Controller
                 return response()->json([
                     'message' => 'User not found'
                 ]);
+            }
+        } catch (\Exception $exception) {
+            Log::error($exception->getMessage());
+            $msg = json_encode($exception->getMessage(), JSON_THROW_ON_ERROR);
+            return response($msg, 500);
+        }
+    }
+
+    public function delete(int $id)
+    {
+        try {
+            $check = UserModel::query()->where('id', $id);
+            if ($check->count() > 0) {
+                $check->delete();
+                return response()->json([
+                    'message' => 'User deleted successfully'
+                ]);
+            } else {
+                return response()->json([
+                    'message' => 'User not found'
+                ], 404);
             }
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());

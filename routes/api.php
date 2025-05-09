@@ -51,6 +51,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(UserController::class)->group(function () {
             Route::get('/', 'index');
             Route::patch('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+            Route::get('/{id}', 'show');
         });
     });
 });
