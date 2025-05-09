@@ -18,7 +18,7 @@ class AuthController extends Controller
     {
         try {
             $c_user = Auth::user();
-            $check = UserModel::query()->with('role')->find($c_user->id)->all();
+            $check = UserModel::query()->with('role')->where('id', $c_user->id)->get();
             return UserResource::collection($check);
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
